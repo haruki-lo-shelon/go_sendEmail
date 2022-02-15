@@ -1,4 +1,4 @@
-module sendgridjp-go-example
+module go_sendmail
 
 go 1.16
 

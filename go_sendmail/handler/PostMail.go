@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	// "io/ioutil"
-	// "encoding/base64"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -17,6 +15,7 @@ import (
 	"sync"
 )
 
+//メールの構造体
 type Mail struct {
 	Name    string
 	Subject string
@@ -28,9 +27,10 @@ var store = map[string]*Mail{}
 
 var lock = sync.RWMutex{}
 
+//送信する関数
 func PostMail(w rest.ResponseWriter, r *rest.Request) {
 	send := Mail{}
-	err := r.DecodeJsonPayload(&send)
+	err := r.DecodeJsonPayload(&send)//sendにpost値を入れる
 	if err != nil {
 			rest.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -40,6 +40,7 @@ func PostMail(w rest.ResponseWriter, r *rest.Request) {
 			rest.Error(w, "mail required", 400)
 			return
 	}
+	
 	lock.Lock()
 	store[send.Name] = &send
 	lock.Unlock()
@@ -52,8 +53,7 @@ func PostMail(w rest.ResponseWriter, r *rest.Request) {
 	// .envから環境変数読み込み
 	API_KEY := os.Getenv("API_KEY")
 	TOS := strings.Split(os.Getenv("TOS"), ",")
-	fr := send.Email
-	//FROM := os.Getenv(send.Email)
+	fr := send.Email//postした値に含めたメールアドレス（送信者のメアド）
 
 	// メッセージの構築
 	message := mail.NewV3Mail()
@@ -61,10 +61,12 @@ func PostMail(w rest.ResponseWriter, r *rest.Request) {
 	from := mail.NewEmail("", fr)
 	message.SetFrom(from)
 
-	// 1つ目の宛先と、対応するSubstitutionタグを指定
+	// 宛先と対応するSubstitutionタグを指定(宛先は複数指定可能)
 	p := mail.NewPersonalization()
 	to := mail.NewEmail("", TOS[0])
 	p.AddTos(to)
+
+	//残りのpostされた値を変数に格納
 	name := send.Name
 	subject := send.Subject
 	text := send.Text
@@ -78,18 +80,18 @@ func PostMail(w rest.ResponseWriter, r *rest.Request) {
 	// p2 := mail.NewPersonalization()
 	// to2 := mail.NewEmail("", TOS[1])
 	// p2.AddTos(to2)
-	// p2.SetSubstitution("%fullname%", "佐藤 次郎")
-	// p2.SetSubstitution("%familyname%", "佐藤")
-	// p2.SetSubstitution("%place%", "目黒")
+	// p2.SetSubstitution("%name%", name)
+	// p2.SetSubstitution("%m_subject%", subject)
+	// p2.SetSubstitution("%m_text%", text)
 	// message.AddPersonalizations(p2)
 
 	// 3つ目の宛先と、対応するSubstitutionタグを指定
 	// p3 := mail.NewPersonalization()
 	// to3 := mail.NewEmail("", TOS[2])
 	// p3.AddTos(to3)
-	// p3.SetSubstitution("%fullname%", "鈴木 三郎")
-	// p3.SetSubstitution("%familyname%", "鈴木")
-	// p3.SetSubstitution("%place%", "中野")
+	// p3.SetSubstitution("%name%", name)
+	// p3.SetSubstitution("%m_subject%", subject)
+	// p3.SetSubstitution("%m_text%", text)
 	// message.AddPersonalizations(p3)
 
 	// 件名を設定
@@ -98,7 +100,7 @@ func PostMail(w rest.ResponseWriter, r *rest.Request) {
 	c := mail.NewContent("text/plain", "%m_text%\r\n")
 	message.AddContent(c)
 	// HTMLパートを設定
-	//c = mail.NewContent("text/html", "<strong> %familyname% さんは何をしていますか？</strong><br>彼は%place%にいます。")
+	//c = mail.NewContent("text/html", "<strong> %name% さんは何をしていますか？</strong><br>　文章ー－－。")
 	// message.AddContent(c)
 
 	// カテゴリ情報を付加
