@@ -1,15 +1,14 @@
 package main
 
 import (
-	"go_sendmail/handler"
 	"log"
 	"net/http"
 
+	"go_sendmail/handler"
 	"github.com/ant0ine/go-json-rest/rest"
 )
 
 func main() {
-	//REST APIでpost処理を実現
 	api := rest.NewApi()
 	api.Use(rest.DefaultDevStack...)
 	router, err := rest.MakeRouter(
